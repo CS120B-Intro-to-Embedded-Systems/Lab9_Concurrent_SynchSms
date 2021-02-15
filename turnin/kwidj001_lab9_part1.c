@@ -51,8 +51,8 @@ void PWM_off() {
 	TCCR0B = 0x00;
 }
 
-unsigned char tmpA = 0x00, tl_tmpB = 0x00, bl_tmpB = 0x00, cl_tmpB = 0x00;
-double frequency = 0;
+unsigned char tl_tmpB = 0x00, bl_tmpB = 0x00, cl_tmpB  = 0x00;
+
 //THREE LED SM
 enum three_led_States {tl_INIT, tl_LED1, tl_LED2, tl_LED3} tl_state;
 
@@ -138,132 +138,33 @@ void cl_tick(){
       break;
     case cl_COMB:
       cl_tmpB = bl_tmpB | tl_tmpB;
-      set_PWM(frequency);
       break;
     default:
       break;
   }
   PORTB = cl_tmpB;
 }
-//speaker
-enum sp_States {sp_INIT, sp_ON, sp_OFF} sp_state;
-
-void sp_tick(){
-  switch(sp_state){
-    case sp_INIT:
-      sp_state = sp_ON;
-      break;
-    case sp_ON;
-      if(tmpA = 0x00){
-        sp_state = sp_OFF;
-      }
-      break;
-    case sp_OFF:
-      if(tmpA = 0x01){
-        sp_state = sp_ON;
-      }
-      break;
-    default:
-      break;
-  }
-  switch(sp_state){
-    case sp_INIT:
-      break;
-    case sp_OFF:
-      frequency = cf_val[0];
-    case sp_ON:
-      frequency = cf_val[1];
-  }
-}
-//change frequency
-enum cf_States{cf_INIT, cf_INC, cf_DEC, cf_HOLD} cf_state;
-double cf_val[2] = {0.00, 261.63}; //min and max values for frequency
-void cf_tick(){
-  switch(cf_state){
-      case cf_INIT:
-        if(tmpA = 0x02){
-          cf_state = cf_INC;
-        }else if(tmpA = 0x04){
-          cf_state = cf_DEC;
-        }
-        break;
-      case cf_INC:
-        cf_state = cf_HOLD;
-        break;
-      case cf_DEC:
-        cf_state = cf_HOLD;
-        break;
-      case cf_HOLD:
-        if(tmpA = 0x00){
-          cf_state = cf_INIT;
-        }
-        break;
-      default:
-        break;
-  }
-  switch(cf_state){
-    case cf_INIT:
-      break;
-    case cf_INC:
-      cf_val[1] += 20.00;
-      break;
-    case cf_DEC:
-      cf_val[1] -= 20.00;
-			break;
-		case cf_HOLD:
-			break;
-		default:
-			break;
-  }
-}
 
 int main(void) {
     /* Insert DDR and PORT initializations */
     DDRB = 0xFF; PORTB = 0x00;
-		DDRA = 0x00; PORTA = 0xFF;
-    unsigned long tl_elapsed = 0, bl_elapsed = 0, sp_elapsed = 0, cf_elapsed = 0;
-    const unsigned long timer_period = 100;
-    TimerSet(1); //1 second ticks
+    TimerSet(1000); //1 second ticks
     TimerOn();
-
     tl_state = tl_INIT;
     bl_state = bl_INIT;
     cl_state = cl_INIT;
-    sp_state = sp_INIT;
-		cf_state = cf_INIT;
     tl_tmpB = 0x00;
     bl_tmpB = 0x00;
     cl_tmpB = 0x00;
 
     /* Insert your solution below */
     while (1) {
-      tmpA = ~PINA;
-      if(tl_elapsed >= 30000){ //300ms
-        tl_tick();
-        cl_tick();
-        tl_elapsed = 0; //reset
-      }
-      if(bl_elapsed >= 100000){ //1 second
-        bl_tick();
-        cl_tick();
-        bl_elapsed = 0; //reset
-      }
-			if(cf_elapsed >= 5000){ //50ms
-				cf_tick();
-				cl_tick();
-				cf_elapsed = 0; //reset
-			}
-      if(sp_elapsed >= 100){ //1ms
-        sp_tick();
-        cl_tick();
-        sp_elapsed = 0; //reset
-      }
+      tl_tick();
+      bl_tick();
+      cl_tick();
+
       while(!TimerFlag){}
       TimerFlag = 0;
-      tl_elapsed += timer_period;
-      bl_elapsed += timer_period;
-      sp_elapsed += timer_period;
-			cf_elapsed += timer_period;
     }
     return 1;
 }
